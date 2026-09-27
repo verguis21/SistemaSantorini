@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  password     String
+  createdAt    DateTime      @default(now())
+  role         Role          @default(CAJERO)
+  cashSessions CashSession[]
+  orders       Order[]
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String
+  products Product[]
+}
+
+model Product {
+  id         Int         @id @default(autoincrement())
+  name       String
+  price      Decimal
+  active     Boolean     @default(true)
+  categoryId Int
+  orderItems OrderItem[]
+  category   Category    @relation(fields: [categoryId], references: [id])
+}
+
+model DiningTable {
+  id       Int            @id @default(autoincrement())
+  number   Int            @unique
+  status   TableStatus    @default(FREE)
+  accounts TableAccount[]
+}
+
+model TableAccount {
+  id        Int           @id @default(autoincrement())
+  tableId   Int
+  status    AccountStatus @default(OPEN)
+  createdAt DateTime      @default(now())
+  orders    Order[]
+  sale      Sale?
+  table     DiningTable   @relation(fields: [tableId], references: [id])
+}
+
+model Order {
+  id        Int          @id @default(autoincrement())
+  accountId Int
+  userId    Int
+  status    OrderStatus  @default(CREATED)
+  note      String?
+  createdAt DateTime     @default(now())
+  account   TableAccount @relation(fields: [accountId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+  items     OrderItem[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Decimal
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Sale {
+  id        Int          @id @default(autoincrement())
+  accountId Int          @unique
+  total     Decimal
+  createdAt DateTime     @default(now())
+  payment   Payment?
+  account   TableAccount @relation(fields: [accountId], references: [id])
+}
+
+model Payment {
+  id        Int           @id @default(autoincrement())
+  saleId    Int           @unique
+  method    PaymentMethod
+  amount    Decimal
+  createdAt DateTime      @default(now())
+  sale      Sale          @relation(fields: [saleId], references: [id])
+}
+
+model CashSession {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  initialAmount Decimal
+  finalAmount   Decimal?
+  openedAt      DateTime  @default(now())
+  closedAt      DateTime?
+  user          User      @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  ADMIN
+  CAJERO
+  COCINA
+}
+
+enum TableStatus {
+  FREE
+  OCCUPIED
+}
+
+enum AccountStatus {
+  OPEN
+  CLOSED
+  IN_PROCESS
+  READY
+  PAID
+}
+
+enum OrderStatus {
+  CREATED
+  SENT_TO_KITCHEN
+  PREPARING
+  READY
+  DELIVERED
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  TARJETA
+  YAPE
+  PLIN
+}
