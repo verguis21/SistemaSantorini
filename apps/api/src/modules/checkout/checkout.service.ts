@@ -63,6 +63,16 @@ export const getAccountCheckout = async (accountId: number) => {
         );
 
     }
+        const pendingOrders = account.orders.filter(
+        order =>
+            !["READY", "DELIVERED"].includes(order.status)
+    );
+
+    if (pendingOrders.length > 0) {
+        throw new Error(
+            "No se puede cobrar: hay comandas pendientes de preparación o entrega."
+        );
+    }
 
     let total = 0;
 
